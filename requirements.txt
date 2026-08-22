@@ -1,0 +1,17 @@
+# Versions verified with Python 3.11 in the travel Conda environment.
+openai-agents==0.20.0
+mcp==1.29.0
+openai==2.49.0
+fastapi==0.141.1
+uvicorn==0.52.0
+gradio==6.24.0
+python-dotenv==1.2.2
+pandas==3.0.5
+numpy==2.4.6
+openpyxl==3.1.5
+python-docx==1.2.0
+chromadb==1.5.9
+requests==2.34.2
+dashscope==1.26.7
+statsmodels==0.14.6
+litellm==1.96.2
