@@ -191,7 +191,7 @@ class FinancialAssistant:
         )
 
         # 金融文章质检智能体
-        article_check_agent_prompt = """1.获取用户需要审查风险的金融文章文本。
+        article_check_agent_prompt = """1.获取用户需要审查风险的金融文章文件名。调用工具时必须传递准确的文件名和 .docx 后缀，并去掉《》等书名号。
                 1a) 如果用户想要对文章进行专业性审查，请调用'professional_check_tool'函数。
                 1b) 如果用户想要对文章进行规范性审查，请调用'basic_check_tool'函数。
                 1c) 如果用户想要生成审查分析报告，请跳到第 2 步
@@ -233,11 +233,14 @@ class FinancialAssistant:
         )
 
         # 业务转接智能体
-        switch_agent_prompt = """你是一名热情而又专业的业务转接助理,你能根据用户的意图转接到咨询问题、文章审核、股价查询或人工服务智能体"""
+        switch_agent_prompt = """你是一名热情而又专业的业务转接助理,你能根据用户的意图转接到咨询问题、文章审核、股价查询或人工服务智能体。
+                必须调用对应的 handoff 工具实际完成转交，禁止仅用自然语言声称“已经转交”。
+                股票查询、七日预测和投资报告必须转交 Investment Agent；金融文章审查必须转交 Article Check Agent。"""
         switch_agent = Agent(
             name="Switch Agent",
             instructions=switch_agent_prompt + "请根据用户需求移交给合适的智能体进行回复，若没合适的则自己回答",
             handoffs=[investment_agent, turn_human_agent, article_check_agent, consult_agent],
+            model_settings=ModelSettings(tool_choice="required"),
             model=deepseek_model
         )
 
@@ -272,18 +275,18 @@ class FinancialAssistant:
         # 检查并确保MCP服务器连接正常
         await self.mcp_manager.check_connections()
         session = global_sessions.get(session_id)
-        print("session:",session)
         if not session:
             raise ValueError(f"Session {session_id} not found")
 
         # 添加用户消息到会话历史
         session["messages"].append({"content": message, "role": "user"})
-        print("xxxx:",session)
 
         # 处理消息
         result = await Runner.run(
             starting_agent=self.initial_agent if session.get("current_agent")==None else session["current_agent"],
-            input=session["messages"][-10:]  # 限制历史消息长度防止过载
+            # Agent SDK 历史包含成对的 function_call/function_call_output。
+            # 不能按事件数量生硬切片，否则会留下孤立的 tool 消息并触发 API 400。
+            input=session["messages"]
         )
 
         # 处理结果
@@ -339,14 +342,12 @@ async def chat_service(current_message: str, session_id: str = "") -> dict:
     """
     try:
         assistant = await get_assistant()
-        print("assistant:",assistant)
         if not session_id or session_id not in global_sessions:
             # 创建新会话
             session_id = await assistant.create_session()
             print(f"Created new session: {session_id}")
 
         response = await assistant.process_message(session_id, current_message)
-        print("response1:",response)
         return {
             "session_id": session_id,
             "response": response,

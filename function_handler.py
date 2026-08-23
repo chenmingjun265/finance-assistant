@@ -68,7 +68,7 @@ def exponential_moving_average(series, alpha, forecast_periods=1):
     # 计算EMA
     ema = series.ewm(alpha=alpha, adjust=False).mean()
     # 获取最后一个EMA值作为预测基础
-    last_ema = ema[-1]
+    last_ema = ema.iloc[-1]
     # 创建未来日期索引
     future_dates = pd.date_range(
         start=series.index[-1],

@@ -60,10 +60,10 @@ async def predict_future_7data(stock_name):
     else:
         return f"我无法预测未来7日{stock_name}股票的收盘价"
     stock_data.asfreq('D')
-    series = pd.Series(np.float16(stock_data['Close']), index=stock_data['Date'])
-    # 计算EMA并预测未来10期
+    series = pd.Series(np.float64(stock_data['Close']), index=stock_data['Date'])
+    # 计算 EMA 并预测未来 7 期
     alpha = 0.8  # 平滑因子
-    forecast =exponential_moving_average(series, alpha, forecast_periods=3)
+    forecast =exponential_moving_average(series, alpha, forecast_periods=7)
     print("forecast:",forecast)
     forecast_in_oneline=",".join([str(round(k,3)) for k in list(forecast)[-7:]])
     print("forecast_in_oneline:",forecast_in_oneline)
